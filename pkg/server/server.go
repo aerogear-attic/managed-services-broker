@@ -24,9 +24,8 @@ import (
 	"net/http"
 	"time"
 
-
-	"github.com/aerogear/managed-services-broker/pkg/controller"
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
+	"github.com/aerogear/managed-services-broker/pkg/controller"
 	"github.com/aerogear/managed-services-broker/pkg/server/util"
 
 	"github.com/gorilla/mux"
@@ -109,7 +108,7 @@ func run(ctx context.Context, addr string, listenAndServe func(srv *http.Server)
 }
 
 func (s *server) catalog(w http.ResponseWriter, r *http.Request) {
-	logrus.Infof("Get Service Broker Catalog...")
+	glog.Infof("Get Service Broker Catalog...")
 
 	if result, err := s.controller.Catalog(); err == nil {
 		util.WriteResponse(w, http.StatusOK, result)

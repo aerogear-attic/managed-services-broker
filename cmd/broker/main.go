@@ -26,10 +26,9 @@ import (
 	"strconv"
 	"syscall"
 
-
-	"github.com/aerogear/managed-services-broker/pkg/server"
-	"github.com/aerogear/managed-services-broker/pkg/controller"
 	"github.com/aerogear/managed-services-broker/pkg"
+	"github.com/aerogear/managed-services-broker/pkg/controller"
+	"github.com/aerogear/managed-services-broker/pkg/server"
 	glog "github.com/sirupsen/logrus"
 )
 
@@ -40,9 +39,9 @@ var options struct {
 }
 
 func init() {
-	flag.IntVar(&options.Port, "port", 8005, "use '--port' option to specify the port for broker to listen on")
-	flag.StringVar(&options.TLSCert, "tlsCert", "", "base-64 encoded PEM block to use as the certificate for TLS. If '--tlsCert' is used, then '--tlsKey' must also be used. If '--tlsCert' is not used, then TLS will not be used.")
-	flag.StringVar(&options.TLSKey, "tlsKey", "", "base-64 encoded PEM block to use as the private key matching the TLS certificate. If '--tlsKey' is used, then '--tlsCert' must also be used")
+	flag.IntVar(&options.Port, "port", 8080, "use '--port' option to specify the port for broker to listen on")
+	flag.StringVar(&options.TLSCert, "tlsCert", os.Getenv("TLS_CERT"), "base-64 encoded PEM block to use as the certificate for TLS. If '--tlsCert' is used, then '--tlsKey' must also be used. If '--tlsCert' is not used, then TLS will not be used.")
+	flag.StringVar(&options.TLSKey, "tlsKey", os.Getenv("TLS_KEY"), "base-64 encoded PEM block to use as the private key matching the TLS certificate. If '--tlsKey' is used, then '--tlsCert' must also be used")
 	flag.Parse()
 }
 

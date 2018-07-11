@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: msb
+objects:
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: msb
+      labels:
+        app:  managed-services-broker
+        service: msb
+      annotations:
+        service.alpha.openshift.io/serving-cert-secret-name: msb-tls
+    spec:
+      selector:
+        app:  managed-services-broker
+        service: msb
+      ports:
+      - protocol: TCP
+        port: 8080
+        targetPort: 8080
+
+  - apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      name: msb
+      labels:
+        app:  managed-services-broker
+        service: msb
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app:  managed-services-broker
+      template:
+        metadata:
+          labels:
+            app:  managed-services-broker
+            service: msb
+        spec:
+          containers:
+          - name: managed-services-broker
+            image: ${IMAGE_NAME}
+            imagePullPolicy: ${IMAGE_PULL_POLICY}
+            args:
+            - --port
+            - "8080"
+            env:
+            - name: TLS_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: msb-tls
+                  key: tls.crt
+            - name: TLS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: msb-tls
+                  key: tls.key
+            ports:
+            - containerPort: 8080
+            readinessProbe:
+              tcpSocket:
+                port: 8080
+              failureThreshold: 1
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 2
+            livenessProbe:
+              tcpSocket:
+                port: 8080
+              failureThreshold: 3
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 2
+
+  - apiVersion: v1
+    kind: Route
+    metadata:
+      name: msb
+      labels:
+        app: managed-services-broker
+        service: msb
+    spec:
+      to:
+        kind: Service
+        name: msb
+      port:
+        targetPort: 8080
+      tls:
+        termination: reencrypt
+
+  - apiVersion: servicecatalog.k8s.io/v1beta1
+    kind: ClusterServiceBroker
+    metadata:
+      name: managed-services-broker
+    spec:
+      url: https://msb.${NAMESPACE}.svc:8080${BROKER_URL_PREFIX}/
+      # authInfo:
+      #   ${{BROKER_AUTH}}
+      # caBundle: ${BROKER_CA_CERT}
+
+parameters:
+  - name: NAMESPACE
+    description: Namespace of the project that is being deployed to
+    value: "managed-services-broker"
+
+  - name: CA_BUNDLE
+    description: Test
+    value: ""
+
+  - name: IMAGE_NAME
+    description: Test
+    value: "dimitraz/managed-service-broker:1.0.0"
+
+  - name: IMAGE_PULL_POLICY
+    description: Test
+    value: "Always"
+
+  - name: BROKER_URL_PREFIX 
+    description: Service Broker URL prefix for the cluster
+    value: "/managed-services-broker"
