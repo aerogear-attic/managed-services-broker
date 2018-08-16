@@ -24,45 +24,44 @@ func (fd *FuseDeployer) DoesDeploy(serviceID string) bool {
 
 func (fd *FuseDeployer) GetCatalogEntries() []*brokerapi.Service {
 	glog.Infof("Getting fuse catalog entries")
-	return []*brokerapi.Service{
-		{
-			Name:        "fuse",
-			ID:          "fuse-service-id",
-			Description: "fuse",
-			Metadata:    map[string]string{"serviceName": "fuse", "serviceType": "fuse"},
-			Plans: []brokerapi.ServicePlan{
-				brokerapi.ServicePlan{
-					Name:        "default",
-					ID:          "default",
-					Description: "default fuse plan",
-					Free:        true,
-					Schemas: &brokerapi.Schemas{
-						ServiceBinding: &brokerapi.ServiceBindingSchema{
-							Create: &brokerapi.RequestResponseSchema{},
-						},
-						ServiceInstance: &brokerapi.ServiceInstanceSchema{
-							Create: &brokerapi.InputParametersSchema{},
-						},
-					},
-				},
-			},
-		},
-	}
+	return getCatalogServicesObj()
 }
 
 func (fd *FuseDeployer) Deploy(id string, k8sclient kubernetes.Interface, osClientFactory *openshift.ClientFactory) (*brokerapi.CreateServiceInstanceResponse, error) {
-	ns, err := k8sclient.CoreV1().Namespaces().Create(getNamespace("fuse-" + id))
+	glog.Infof("Deploying fuse from deployer, id: %s", id)
+
+	// Namespace
+	ns, err := k8sclient.CoreV1().Namespaces().Create(getNamespaceObj("fuse-" + id))
 	if err != nil {
 		return &brokerapi.CreateServiceInstanceResponse{
 			Code: http.StatusInternalServerError,
 		}, errors.Wrap(err, "failed to create namespace for fuse service")
 	}
-	glog.Infof("created namespace: %s", ns.ObjectMeta.Name)
 
+	namespace := ns.ObjectMeta.Name
+
+	// ServiceAccount
+	_, err = k8sclient.CoreV1().ServiceAccounts(namespace).Create(getServiceAccountObj())
 	if err != nil {
 		return &brokerapi.CreateServiceInstanceResponse{
 			Code: http.StatusInternalServerError,
-		}, errors.Wrap(err, "failed to create namespace for fuse service")
+		}, errors.Wrap(err, "failed to create service account for fuse service")
+	}
+
+	//Role
+	_, err = k8sclient.RbacV1beta1().Roles(namespace).Create(getRoleObj())
+	if err != nil {
+		return &brokerapi.CreateServiceInstanceResponse{
+			Code: http.StatusInternalServerError,
+		}, errors.Wrap(err, "failed to create role for fuse service")
+	}
+
+	//Rolebinding
+	_, err = k8sclient.RbacV1beta1().RoleBindings(namespace).Create(getInstallRoleBindingObj())
+	if err != nil {
+		return &brokerapi.CreateServiceInstanceResponse{
+			Code: http.StatusInternalServerError,
+		}, errors.Wrap(err, "failed to create install role binding for fuse service")
 	}
 
 	return &brokerapi.CreateServiceInstanceResponse{

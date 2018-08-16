@@ -110,13 +110,14 @@ func (c *userProvidedController) CreateServiceInstance(
 	id string,
 	req *brokerapi.CreateServiceInstanceRequest,
 ) (*brokerapi.CreateServiceInstanceResponse, error) {
+	glog.Infof("Create service instance: %s", req.ServiceID)
 	for _, deployer := range c.registeredDeployers {
 		if deployer.DoesDeploy(req.ServiceID) {
 			return deployer.Deploy(id, c.k8sclient, c.osClientFactory)
 		}
 	}
 
-	return &brokerapi.CreateServiceInstanceResponse{Code: http.StatusInternalServerError, Operation: "provision"}, nil
+	return &brokerapi.CreateServiceInstanceResponse{Code: http.StatusInternalServerError}, nil
 }
 
 func (c *userProvidedController) GetServiceInstanceLastOperation(
