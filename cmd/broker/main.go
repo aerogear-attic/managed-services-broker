@@ -13,8 +13,10 @@ import (
 	"github.com/aerogear/managed-services-broker/pkg/broker"
 	"github.com/aerogear/managed-services-broker/pkg/broker/controller"
 	"github.com/aerogear/managed-services-broker/pkg/broker/server"
+	"github.com/aerogear/managed-services-broker/pkg/clients/openshift"
 	"github.com/aerogear/managed-services-broker/pkg/deploys/fuse"
 	"github.com/operator-framework/operator-sdk/pkg/k8sclient"
+	"github.com/pkg/errors"
 	glog "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -68,10 +70,13 @@ func runWithContext(ctx context.Context) error {
 		&clientcmd.ConfigOverrides{},
 	)
 	cfg, err := kubeconfig.ClientConfig()
-
+	if err != nil {
+		return errors.Wrap(err, "error creating kube client config")
+	}
 	k8sClient := k8sclient.GetKubeClient()
+	osClient := openshift.NewClientFactory(cfg)
 
-	ctrlr := controller.CreateController(namespace, k8sClient, cfg)
+	ctrlr := controller.CreateController(namespace, k8sClient, osClient)
 	ctrlr.RegisterDeployer(fuse.NewDeployer("fuse-deployer"))
 	ctrlr.Catalog()
 

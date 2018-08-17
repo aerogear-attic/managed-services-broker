@@ -169,6 +169,21 @@
   version = "1.0.0"
 
 [[projects]]
+  name = "github.com/openshift/api"
+  packages = ["build/v1"]
+  revision = "0d921e363e951d89f583292c60d013c318df64dc"
+  version = "v3.9.0"
+
+[[projects]]
+  name = "github.com/openshift/client-go"
+  packages = [
+    "build/clientset/versioned/scheme",
+    "build/clientset/versioned/typed/build/v1"
+  ]
+  revision = "1fa528d3be060e4c7178eb69e76d37cf7e699e3c"
+  version = "v3.9.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
@@ -408,6 +423,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "73e1f1e8a569225b350425a586dcc324963f4473f99e243525a3f51b040d4a51"
+  inputs-digest = "0ea8ac4e91a9fec85aa7b323e37ed366b550f4759901886b2173785ec38f3fc5"
   solver-name = "gps-cdcl"
   solver-version = 1

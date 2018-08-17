@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
+	"github.com/aerogear/managed-services-broker/pkg/clients/openshift"
 	"github.com/pkg/errors"
 	glog "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type FuseDeployer struct {
@@ -50,7 +50,7 @@ func (fd *FuseDeployer) GetCatalogEntries() []*brokerapi.Service {
 	}
 }
 
-func (fd *FuseDeployer) Deploy(id string, k8sclient kubernetes.Interface, config *rest.Config) (*brokerapi.CreateServiceInstanceResponse, error) {
+func (fd *FuseDeployer) Deploy(id string, k8sclient kubernetes.Interface, osClientFactory *openshift.ClientFactory) (*brokerapi.CreateServiceInstanceResponse, error) {
 	ns, err := k8sclient.CoreV1().Namespaces().Create(getNamespace("fuse-" + id))
 	if err != nil {
 		return &brokerapi.CreateServiceInstanceResponse{
@@ -59,9 +59,22 @@ func (fd *FuseDeployer) Deploy(id string, k8sclient kubernetes.Interface, config
 	}
 	glog.Infof("created namespace: %s", ns.ObjectMeta.Name)
 
-	glog.Infof("deploying fuse from deployer, id: %s", id)
+	if err != nil {
+		return &brokerapi.CreateServiceInstanceResponse{
+			Code: http.StatusInternalServerError,
+		}, errors.Wrap(err, "failed to create namespace for fuse service")
+	}
+
 	return &brokerapi.CreateServiceInstanceResponse{
-		Code: http.StatusOK,
+		Code:         http.StatusAccepted,
+		DashboardURL: "",
+	}, nil
+}
+
+func (fd *FuseDeployer) LastOperation(instanceID string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.LastOperationResponse, error) {
+	return &brokerapi.LastOperationResponse{
+		State:       brokerapi.StateSucceeded,
+		Description: "deploying fuse",
 	}, nil
 }
 

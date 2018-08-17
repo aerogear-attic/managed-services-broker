@@ -20,22 +20,21 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"net/http"
 
 	"github.com/aerogear/managed-services-broker/pkg/broker"
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
+	"github.com/aerogear/managed-services-broker/pkg/clients/openshift"
 	glog "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 //Deployer deploys a service from this broker
 type Deployer interface {
 	GetCatalogEntries() []*brokerapi.Service
-	Deploy(id string, k8sclient kubernetes.Interface, config *rest.Config) (*brokerapi.CreateServiceInstanceResponse, error)
+	Deploy(id string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.CreateServiceInstanceResponse, error)
+	LastOperation(instanceID string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.LastOperationResponse, error)
 	GetID() string
 	DoesDeploy(serviceID string) bool
 }
@@ -72,19 +71,19 @@ type userProvidedController struct {
 	rwMutex             sync.RWMutex
 	instanceMap         map[string]*userProvidedServiceInstance
 	k8sclient           kubernetes.Interface
+	osClientFactory     *openshift.ClientFactory
 	brokerNS            string
-	kubeconfig          *rest.Config
 	registeredDeployers map[string]Deployer
 }
 
 // CreateController creates an instance of a User Provided service broker controller.
-func CreateController(brokerNS string, k8sclient kubernetes.Interface, kubeconfig *rest.Config) Controller {
+func CreateController(brokerNS string, k8sclient kubernetes.Interface, osClientFactory *openshift.ClientFactory) Controller {
 	var instanceMap = make(map[string]*userProvidedServiceInstance)
 	return &userProvidedController{
 		instanceMap:         instanceMap,
 		brokerNS:            brokerNS,
 		k8sclient:           k8sclient,
-		kubeconfig:          kubeconfig,
+		osClientFactory:     osClientFactory,
 		registeredDeployers: map[string]Deployer{},
 	}
 }
@@ -113,7 +112,7 @@ func (c *userProvidedController) CreateServiceInstance(
 ) (*brokerapi.CreateServiceInstanceResponse, error) {
 	for _, deployer := range c.registeredDeployers {
 		if deployer.DoesDeploy(req.ServiceID) {
-			return deployer.Deploy(id, c.k8sclient, c.kubeconfig)
+			return deployer.Deploy(id, c.k8sclient, c.osClientFactory)
 		}
 	}
 
@@ -127,8 +126,13 @@ func (c *userProvidedController) GetServiceInstanceLastOperation(
 	operation string,
 ) (*brokerapi.LastOperationResponse, error) {
 	glog.Info("GetServiceInstanceLastOperation()", "operation "+operation, serviceID)
+	for _, deployer := range c.registeredDeployers {
+		if deployer.DoesDeploy(serviceID) {
+			return deployer.LastOperation(instanceID, c.k8sclient, c.osClientFactory)
+		}
+	}
 
-	return nil, errors.New("Unimplemented")
+	return &brokerapi.LastOperationResponse{State: brokerapi.StateFailed, Description: "Could not find deployer for " + serviceID}, nil
 }
 
 func (c *userProvidedController) RemoveServiceInstance(
