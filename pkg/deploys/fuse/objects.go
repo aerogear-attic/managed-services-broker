@@ -2,8 +2,13 @@ package fuse
 
 import (
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
+	"github.com/aerogear/managed-services-broker/pkg/deploys/fuse/pkg/syndesis/v1alpha1"
+	appsv1 "github.com/openshift/api/apps/v1"
+	authv1 "github.com/openshift/api/authorization/v1"
+	imagev1 "github.com/openshift/api/image/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -143,6 +148,252 @@ func getInstallRoleBindingObj() *rbacv1beta1.RoleBinding {
 			Kind:     "Role",
 			Name:     "syndesis-operator",
 			APIGroup: "rbac.authorization.k8s.io",
+		},
+	}
+}
+
+func getViewRoleBindingObj() *authv1.RoleBinding {
+	return &authv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "syndesis-operator:view",
+			Labels: map[string]string{
+				"app":                   "syndesis",
+				"syndesis.io/app":       "syndesis",
+				"syndesis.io/type":      "operator",
+				"syndesis.io/component": "syndesis-operator",
+			},
+		},
+		Subjects: []corev1.ObjectReference{
+			{
+				Kind: "ServiceAccount",
+				Name: "syndesis-operator",
+			},
+		},
+		RoleRef: corev1.ObjectReference{
+			Name: "view",
+		},
+	}
+}
+
+func getEditRoleBindingObj() *authv1.RoleBinding {
+	return &authv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "syndesis-operator:edit",
+			Labels: map[string]string{
+				"app":                   "syndesis",
+				"syndesis.io/app":       "syndesis",
+				"syndesis.io/type":      "operator",
+				"syndesis.io/component": "syndesis-operator",
+			},
+		},
+		Subjects: []corev1.ObjectReference{
+			{
+				Kind: "ServiceAccount",
+				Name: "syndesis-operator",
+			},
+		},
+		RoleRef: corev1.ObjectReference{
+			Name: "edit",
+		},
+	}
+}
+
+func getImageStreamObj() *imagev1.ImageStream {
+	return &imagev1.ImageStream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "syndesis-operator",
+			Labels: map[string]string{
+				"app":                   "syndesis",
+				"syndesis.io/app":       "syndesis",
+				"syndesis.io/type":      "operator",
+				"syndesis.io/component": "syndesis-operator",
+			},
+		},
+		Spec: imagev1.ImageStreamSpec{
+			LookupPolicy: imagev1.ImageLookupPolicy{
+				Local: true,
+			},
+			Tags: []imagev1.TagReference{
+				{
+					From: &corev1.ObjectReference{
+						Kind: "DockerImage",
+						Name: "docker.io/syndesis/syndesis-operator:latest",
+					},
+					ImportPolicy: imagev1.TagImportPolicy{
+						Scheduled: true,
+					},
+					Name: "latest",
+				},
+			},
+		},
+	}
+}
+
+func getDeploymentConfigObj() *appsv1.DeploymentConfig {
+	return &appsv1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "syndesis-operator",
+			Labels: map[string]string{
+				"app":                   "syndesis",
+				"syndesis.io/app":       "syndesis",
+				"syndesis.io/type":      "operator",
+				"syndesis.io/component": "syndesis-operator",
+			},
+		},
+		Spec: appsv1.DeploymentConfigSpec{
+			Strategy: appsv1.DeploymentStrategy{
+				Type: "Recreate",
+			},
+			Replicas: 1,
+			Selector: map[string]string{
+				"syndesis.io/app":       "syndesis",
+				"syndesis.io/type":      "operator",
+				"syndesis.io/component": "syndesis-operator",
+			},
+			Template: &corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"syndesis.io/app":       "syndesis",
+						"syndesis.io/type":      "operator",
+						"syndesis.io/component": "syndesis-operator",
+					},
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "syndesis-operator",
+					Containers: []corev1.Container{
+						{
+							Name:  "syndesis-operator",
+							Image: " ",
+							Command: []string{
+								"syndesis-operator",
+							},
+							ImagePullPolicy: "IfNotPresent",
+							Env: []corev1.EnvVar{
+								{
+									Name: "WATCH_NAMESPACE",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.namespace",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Triggers: appsv1.DeploymentTriggerPolicies{
+				appsv1.DeploymentTriggerPolicy{
+					ImageChangeParams: &appsv1.DeploymentTriggerImageChangeParams{
+						Automatic: true,
+						ContainerNames: []string{
+							"syndesis-operator",
+						},
+						From: corev1.ObjectReference{
+							Kind: "ImageStreamTag",
+							Name: "syndesis-operator:latest",
+						},
+					},
+					Type: "ImageChange",
+				},
+				appsv1.DeploymentTriggerPolicy{
+					Type: "ConfigChange",
+				},
+			},
+		},
+	}
+}
+
+// System specific role bindings
+func getSystemRoleBindings(namespace string) []rbacv1beta1.RoleBinding {
+	return []rbacv1beta1.RoleBinding{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "system:deployers",
+			},
+			Subjects: []rbacv1beta1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      "deployer",
+					Namespace: namespace,
+				},
+			},
+			RoleRef: rbacv1beta1.RoleRef{
+				Kind:     "ClusterRole",
+				Name:     "system:deployer",
+				APIGroup: "rbac.authorization.k8s.io",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "system:image-builders",
+			},
+			Subjects: []rbacv1beta1.Subject{
+				{
+					Kind:      "ServiceAccount",
+					Name:      "builder",
+					Namespace: namespace,
+				},
+			},
+			RoleRef: rbacv1beta1.RoleRef{
+				Kind:     "ClusterRole",
+				Name:     "system:image-builder",
+				APIGroup: "rbac.authorization.k8s.io",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "system:image-pullers",
+			},
+			Subjects: []rbacv1beta1.Subject{
+				{
+					Kind:      "Group",
+					Name:      "system:serviceaccounts:" + namespace,
+					Namespace: namespace,
+				},
+			},
+			RoleRef: rbacv1beta1.RoleRef{
+				Kind:     "ClusterRole",
+				Name:     "system:image-puller",
+				APIGroup: "rbac.authorization.k8s.io",
+			},
+		},
+	}
+}
+
+// Fuse Custom Resource
+func getFuseObj() *v1alpha1.Syndesis {
+	demoData := false
+	deployIntegrations := true
+	limit := 1
+	stateCheckInterval := 60
+
+	return &v1alpha1.Syndesis{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fuse",
+		},
+		Spec: v1alpha1.SyndesisSpec{
+			RouteHostName:        "syndesis.192.168.64.79.nip.io",
+			DemoData:             &demoData,
+			DeployIntegrations:   &deployIntegrations,
+			ImageStreamNamespace: "",
+			Integration: v1alpha1.IntegrationSpec{
+				Limit:              &limit,
+				StateCheckInterval: &stateCheckInterval,
+			},
+			Registry: "docker.io",
+			Components: v1alpha1.ComponentsSpec{
+				Db: v1alpha1.DbConfiguration{
+					Resources: v1alpha1.ResourcesWithVolume{
+						corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								"memory": resource.Quantity{},
+							},
+						},
+						VolumeCapacity: "1Gi",
+					},
+				},
+			},
 		},
 	}
 }
