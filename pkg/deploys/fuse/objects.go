@@ -369,6 +369,10 @@ func getFuseObj() *v1alpha1.Syndesis {
 	stateCheckInterval := 60
 
 	return &v1alpha1.Syndesis{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Syndesis",
+			APIVersion: "syndesis.io/v1alpha1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "fuse",
 		},
@@ -385,9 +389,41 @@ func getFuseObj() *v1alpha1.Syndesis {
 			Components: v1alpha1.ComponentsSpec{
 				Db: v1alpha1.DbConfiguration{
 					Resources: v1alpha1.ResourcesWithVolume{
-						corev1.ResourceRequirements{
+						ResourceRequirements: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								"memory": resource.Quantity{},
+								"memory": *resource.NewQuantity(255, resource.BinarySI),
+							},
+						},
+						VolumeCapacity: "1Gi",
+					},
+					User:                 "syndesis",
+					Database:             "syndesis",
+					ImageStreamNamespace: "openshift",
+				},
+				Prometheus: v1alpha1.PrometheusConfiguration{
+					Resources: v1alpha1.ResourcesWithVolume{
+						ResourceRequirements: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								"memory": *resource.NewQuantity(512, resource.BinarySI),
+							},
+						},
+						VolumeCapacity: "1Gi",
+					},
+				},
+				Server: v1alpha1.ServerConfiguration{
+					Resources: v1alpha1.Resources{
+						ResourceRequirements: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								"memory": *resource.NewQuantity(800, resource.BinarySI),
+							},
+						},
+					},
+				},
+				Meta: v1alpha1.MetaConfiguration{
+					Resources: v1alpha1.ResourcesWithVolume{
+						ResourceRequirements: corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								"memory": *resource.NewQuantity(512, resource.BinarySI),
 							},
 						},
 						VolumeCapacity: "1Gi",

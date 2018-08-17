@@ -2,36 +2,22 @@ package fuse
 
 import (
 	"net/http"
-	"os"
 
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
 	"github.com/aerogear/managed-services-broker/pkg/clients/openshift"
-	"github.com/operator-framework/operator-sdk/pkg/k8sclient"
+	k8sClient "github.com/operator-framework/operator-sdk/pkg/k8sclient"
+	"github.com/operator-framework/operator-sdk/pkg/util/k8sutil"
 	"github.com/pkg/errors"
 	glog "github.com/sirupsen/logrus"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
 type FuseDeployer struct {
-	id         string
-	fuseClient dynamic.ResourceInterface
+	id string
 }
 
-func NewDeployer(id string) (*FuseDeployer, error) {
-
-	fuseClient, err := getFuseClient("Syndesis")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get a fuse client")
-	}
-	return &FuseDeployer{id: id, fuseClient: fuseClient}, nil
-}
-
-func getFuseClient(kind string) (dynamic.ResourceInterface, error) {
-	namespace := os.Getenv("POD_NAMESPACE")
-	apiVersion := "syndesis.io/v1alpha1"
-	fuseClient, _, err := k8sclient.GetResourceClient(apiVersion, kind, namespace)
-	return fuseClient, err
+func NewDeployer(id string) *FuseDeployer {
+	return &FuseDeployer{id: id}
 }
 
 func (fd *FuseDeployer) DoesDeploy(serviceID string) bool {
@@ -144,12 +130,24 @@ func (fd *FuseDeployer) Deploy(id string, k8sclient kubernetes.Interface, osClie
 	// CRD ?
 
 	// CR
-	_, err = fd.fuseClient.Create(getFuseObj())
+	fuseClient, _, err := k8sClient.GetResourceClient("syndesis.io/v1alpha1", "Syndesis", namespace)
+	if err != nil {
+		return &brokerapi.CreateServiceInstanceResponse{
+			Code: http.StatusInternalServerError,
+		}, errors.Wrap(err, "failed to create fuse client")
+	}
+	glog.Infof("Created Fuse client: %v", fuseClient)
+
+	fuseObj := k8sutil.UnstructuredFromRuntimeObject(getFuseObj())
+
+	fuseCR, err := fuseClient.Create(fuseObj)
 	if err != nil {
 		return &brokerapi.CreateServiceInstanceResponse{
 			Code: http.StatusInternalServerError,
 		}, errors.Wrap(err, "failed to create a fuse custom resource")
 	}
+
+	glog.Infof("FUSE CR created: +%v", fuseCR)
 	return &brokerapi.CreateServiceInstanceResponse{
 		Code:         http.StatusAccepted,
 		DashboardURL: "",

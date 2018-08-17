@@ -78,12 +78,7 @@ func runWithContext(ctx context.Context) error {
 
 	ctrlr := controller.CreateController(namespace, k8sClient, osClient)
 
-	fuseDeployer, err := fuse.NewDeployer("fuse-deployer")
-	if err != nil {
-		return err
-	}
-
-	ctrlr.RegisterDeployer(fuseDeployer)
+	ctrlr.RegisterDeployer(fuse.NewDeployer("fuse-deployer"))
 	ctrlr.Catalog()
 
 	if options.TLSCert == "" && options.TLSKey == "" {
