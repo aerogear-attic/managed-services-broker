@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Fuse plan
 func getCatalogServicesObj() []*brokerapi.Service {
 	return []*brokerapi.Service{
 		{
@@ -47,6 +48,7 @@ func getNamespaceObj(id string) *corev1.Namespace {
 	}
 }
 
+// Fuse operator service account
 func getServiceAccountObj() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -61,6 +63,7 @@ func getServiceAccountObj() *corev1.ServiceAccount {
 	}
 }
 
+// Fuse operator role
 func getRoleObj() *rbacv1beta1.Role {
 	return &rbacv1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -127,6 +130,7 @@ func getRoleObj() *rbacv1beta1.Role {
 	}
 }
 
+// Fuse specific role bindings
 func getInstallRoleBindingObj() *rbacv1beta1.RoleBinding {
 	return &rbacv1beta1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -198,6 +202,7 @@ func getEditRoleBindingObj() *authv1.RoleBinding {
 	}
 }
 
+// Fuse image stream
 func getImageStreamObj() *imagev1.ImageStream {
 	return &imagev1.ImageStream{
 		ObjectMeta: metav1.ObjectMeta{
@@ -229,6 +234,7 @@ func getImageStreamObj() *imagev1.ImageStream {
 	}
 }
 
+// Fuse operator deployment config
 func getDeploymentConfigObj() *appsv1.DeploymentConfig {
 	return &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -377,7 +383,6 @@ func getFuseObj() *v1alpha1.Syndesis {
 			Name: "fuse",
 		},
 		Spec: v1alpha1.SyndesisSpec{
-			RouteHostName:        "syndesis.192.168.64.79.nip.io",
 			DemoData:             &demoData,
 			DeployIntegrations:   &deployIntegrations,
 			ImageStreamNamespace: "",
@@ -391,7 +396,7 @@ func getFuseObj() *v1alpha1.Syndesis {
 					Resources: v1alpha1.ResourcesWithVolume{
 						ResourceRequirements: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								"memory": *resource.NewQuantity(255, resource.BinarySI),
+								"memory": *resource.NewQuantity(255*1024*1024, resource.BinarySI),
 							},
 						},
 						VolumeCapacity: "1Gi",
@@ -404,7 +409,7 @@ func getFuseObj() *v1alpha1.Syndesis {
 					Resources: v1alpha1.ResourcesWithVolume{
 						ResourceRequirements: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								"memory": *resource.NewQuantity(512, resource.BinarySI),
+								"memory": *resource.NewQuantity(512*1024*1024, resource.BinarySI),
 							},
 						},
 						VolumeCapacity: "1Gi",
@@ -414,7 +419,7 @@ func getFuseObj() *v1alpha1.Syndesis {
 					Resources: v1alpha1.Resources{
 						ResourceRequirements: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								"memory": *resource.NewQuantity(800, resource.BinarySI),
+								"memory": *resource.NewQuantity(800*1024*1024, resource.BinarySI),
 							},
 						},
 					},
@@ -423,7 +428,7 @@ func getFuseObj() *v1alpha1.Syndesis {
 					Resources: v1alpha1.ResourcesWithVolume{
 						ResourceRequirements: corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
-								"memory": *resource.NewQuantity(512, resource.BinarySI),
+								"memory": *resource.NewQuantity(512*1024*1024, resource.BinarySI),
 							},
 						},
 						VolumeCapacity: "1Gi",
