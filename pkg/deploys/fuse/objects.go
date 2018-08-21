@@ -2,10 +2,10 @@ package fuse
 
 import (
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
-	"github.com/aerogear/managed-services-broker/pkg/deploys/fuse/pkg/syndesis/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"

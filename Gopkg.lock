@@ -173,11 +173,11 @@
   packages = [
     "apps/v1",
     "authorization/v1",
-    "build/v1",
     "image/docker10",
     "image/dockerpre012",
     "image/v1",
-    "pkg/serialization"
+    "pkg/serialization",
+    "route/v1"
   ]
   revision = "0d921e363e951d89f583292c60d013c318df64dc"
   version = "v3.9.0"
@@ -189,10 +189,10 @@
     "apps/clientset/versioned/typed/apps/v1",
     "authorization/clientset/versioned/scheme",
     "authorization/clientset/versioned/typed/authorization/v1",
-    "build/clientset/versioned/scheme",
-    "build/clientset/versioned/typed/build/v1",
     "image/clientset/versioned/scheme",
-    "image/clientset/versioned/typed/image/v1"
+    "image/clientset/versioned/typed/image/v1",
+    "route/clientset/versioned/scheme",
+    "route/clientset/versioned/typed/route/v1"
   ]
   revision = "1fa528d3be060e4c7178eb69e76d37cf7e699e3c"
   version = "v3.9.0"
@@ -235,6 +235,12 @@
   packages = ["."]
   revision = "583c0c0531f06d5278b7d917446061adc344b5cd"
   version = "v1.0.1"
+
+[[projects]]
+  name = "github.com/syndesisio/syndesis"
+  packages = ["install/operator/pkg/apis/syndesis/v1alpha1"]
+  revision = "f6d111a5212fea5912d4dfd4b0144c655e18bf84"
+  version = "1.5.3"
 
 [[projects]]
   branch = "master"
@@ -437,6 +443,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "361b45cea154b48ee793a94a3d8e9411857c2d68c16fb964199693164faffd66"
+  inputs-digest = "f842c68a010ce1fae7c47175ba9a671f5396353da8cdd1c847365f9cc77f7113"
   solver-name = "gps-cdcl"
   solver-version = 1
