@@ -36,7 +36,7 @@ func (fd *FuseDeployer) GetID() string {
 	return fd.id
 }
 
-func (fd *FuseDeployer) Deploy(instanceID string, k8sclient kubernetes.Interface, osClientFactory *openshift.ClientFactory) (*brokerapi.CreateServiceInstanceResponse, error) {
+func (fd *FuseDeployer) Deploy(instanceID string, contextProfile brokerapi.ContextProfile, k8sclient kubernetes.Interface, osClientFactory *openshift.ClientFactory) (*brokerapi.CreateServiceInstanceResponse, error) {
 	glog.Infof("Deploying fuse from deployer, id: %s", instanceID)
 
 	// Namespace
@@ -48,8 +48,6 @@ func (fd *FuseDeployer) Deploy(instanceID string, k8sclient kubernetes.Interface
 	}
 
 	namespace := ns.ObjectMeta.Name
-
-	// TODO: Fuse custom resource definition
 
 	// ServiceAccount
 	_, err = k8sclient.CoreV1().ServiceAccounts(namespace).Create(getServiceAccountObj())
@@ -92,7 +90,7 @@ func (fd *FuseDeployer) Deploy(instanceID string, k8sclient kubernetes.Interface
 	}
 
 	// Fuse custom resource
-	dashboardURL, err := fd.createFuseCustomResource(namespace, osClientFactory)
+	dashboardURL, err := fd.createFuseCustomResource(namespace, contextProfile.Namespace, osClientFactory)
 	if err != nil {
 		return &brokerapi.CreateServiceInstanceResponse{
 			Code: http.StatusInternalServerError,
@@ -193,13 +191,13 @@ func (fd *FuseDeployer) createFuseOperator(namespace string, osClientFactory *op
 	return nil
 }
 
-func (fd *FuseDeployer) createFuseCustomResource(namespace string, osClientFactory *openshift.ClientFactory) (string, error) {
+func (fd *FuseDeployer) createFuseCustomResource(namespace, userNamespace string, osClientFactory *openshift.ClientFactory) (string, error) {
 	fuseClient, _, err := k8sClient.GetResourceClient("syndesis.io/v1alpha1", "Syndesis", namespace)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create fuse client")
 	}
 
-	fuseObj := getFuseObj()
+	fuseObj := getFuseObj(userNamespace)
 
 	fuseDashboardURL, err := fd.getRouteHostname(namespace, osClientFactory)
 	if err != nil {

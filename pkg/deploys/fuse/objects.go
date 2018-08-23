@@ -2,10 +2,10 @@ package fuse
 
 import (
 	brokerapi "github.com/aerogear/managed-services-broker/pkg/broker"
+	"github.com/jameelb/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
 	imagev1 "github.com/openshift/api/image/v1"
-	"github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -222,7 +222,7 @@ func getImageStreamObj() *imagev1.ImageStream {
 				{
 					From: &corev1.ObjectReference{
 						Kind: "DockerImage",
-						Name: "docker.io/syndesis/syndesis-operator:latest",
+						Name: "docker.io/jameelb/syndesis-operator:latest", // NOTE: Point this to own version of syndesis-operator for auth
 					},
 					ImportPolicy: imagev1.TagImportPolicy{
 						Scheduled: true,
@@ -368,7 +368,7 @@ func getSystemRoleBindings(namespace string) []rbacv1beta1.RoleBinding {
 }
 
 // Fuse Custom Resource
-func getFuseObj() *v1alpha1.Syndesis {
+func getFuseObj(userNamespace string) *v1alpha1.Syndesis {
 	demoData := false
 	deployIntegrations := true
 	limit := 1
@@ -383,6 +383,7 @@ func getFuseObj() *v1alpha1.Syndesis {
 			Name: "fuse",
 		},
 		Spec: v1alpha1.SyndesisSpec{
+			UserNamespace:        userNamespace,
 			DemoData:             &demoData,
 			DeployIntegrations:   &deployIntegrations,
 			ImageStreamNamespace: "",
