@@ -27,6 +27,10 @@ func (fd *FuseDeployer) DoesDeploy(serviceID string) bool {
 	return serviceID == "fuse-service-id"
 }
 
+func (fd *FuseDeployer) DoesRemoveDeploy() bool {
+	return true
+}
+
 func (fd *FuseDeployer) GetCatalogEntries() []*brokerapi.Service {
 	glog.Infof("Getting fuse catalog entries")
 	return getCatalogServicesObj()
@@ -43,7 +47,7 @@ func (fd *FuseDeployer) Deploy(instanceID, brokerNamespace string, contextProfil
 	namespace := os.Getenv("POD_NAMESPACE")
 
 	// Fuse custom resource
-	dashboardURL, err := fd.createFuseCustomResource(namespace, brokerNamespace, contextProfile.Namespace, contextProfile.UserName, k8sclient)
+	dashboardURL, err := fd.createFuseCustomResource(instanceID, namespace, brokerNamespace, contextProfile.Namespace, contextProfile.UserName, k8sclient)
 	if err != nil {
 		glog.Errorln(err)
 		return &brokerapi.CreateServiceInstanceResponse{
@@ -56,6 +60,19 @@ func (fd *FuseDeployer) Deploy(instanceID, brokerNamespace string, contextProfil
 		DashboardURL: dashboardURL,
 	}, nil
 }
+
+func (fd *FuseDeployer) RemoveDeploy(serviceInstanceId string, namespace string, k8sclient kubernetes.Interface) error {
+	fuseClient, _, err := k8sClient.GetResourceClient("syndesis.io/v1alpha1", "Syndesis", namespace); if err != nil {
+		return err
+	}
+
+	err = fuseClient.Delete("fuse-" + "-" + serviceInstanceId, &metav1.DeleteOptions{}); if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 
 func (fd *FuseDeployer) LastOperation(instanceID string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.LastOperationResponse, error) {
 	glog.Infof("Getting last operation for %s", instanceID)
@@ -87,13 +104,13 @@ func (fd *FuseDeployer) LastOperation(instanceID string, k8sclient kubernetes.In
 	}, nil
 }
 
-func (fd *FuseDeployer) createFuseCustomResource(namespace, brokerNamespace, userNamespace, userName string, k8sclient kubernetes.Interface) (string, error) {
+func (fd *FuseDeployer) createFuseCustomResource(serviceInstanceID string, namespace, brokerNamespace, userNamespace, userName string, k8sclient kubernetes.Interface) (string, error) {
 	fuseClient, _, err := k8sClient.GetResourceClient("syndesis.io/v1alpha1", "Syndesis", namespace)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create fuse client")
 	}
 
-	fuseObj := getFuseObj(userNamespace)
+	fuseObj := getFuseObj(serviceInstanceID, userNamespace)
 
 	fuseDashboardURL, err := fd.getRouteHostname(namespace, brokerNamespace, k8sclient)
 	if err != nil {
@@ -113,7 +130,7 @@ func (fd *FuseDeployer) createFuseCustomResource(namespace, brokerNamespace, use
 
 // Get route hostname for fuse
 func (fd *FuseDeployer) getRouteHostname(namespace, brokerNamespace string, k8sclient kubernetes.Interface) (string, error) {
-	brokerDeployment, err := k8sclient.ExtensionsV1beta1().Deployments(brokerNamespace).Get("msb", metav1.GetOptions{})
+	brokerDeployment, err := k8sclient.Apps().Deployments(brokerNamespace).Get("msb", metav1.GetOptions{})
 	if err != nil {
 		glog.Errorf("Failed to get managed services broker deployment: %+v", err)
 		return "", errors.Wrap(err, "failed to get managed services broker deployment")

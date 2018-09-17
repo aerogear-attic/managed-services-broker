@@ -22,6 +22,10 @@ func (fd *CheDeployer) DoesDeploy(serviceID string) bool {
 	return serviceID == "che-service-id"
 }
 
+func (fd *CheDeployer) DoesRemoveDeploy() bool {
+	return true
+}
+
 func (fd *CheDeployer) GetCatalogEntries() []*brokerapi.Service {
 	glog.Infof("Getting che catalog entries")
 	return getCatalogServicesObj()
@@ -40,6 +44,10 @@ func (fd *CheDeployer) Deploy(instanceID, brokerNamespace string, contextProfile
 		Code:         http.StatusAccepted,
 		DashboardURL: dashboardUrl,
 	}, nil
+}
+
+func (fd *CheDeployer) RemoveDeploy(serviceInstanceId string, namespace string, k8sclient kubernetes.Interface) error {
+	return nil
 }
 
 func (fd *CheDeployer) LastOperation(instanceID string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.LastOperationResponse, error) {

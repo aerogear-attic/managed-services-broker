@@ -22,6 +22,10 @@ func (fd *LauncherDeployer) DoesDeploy(serviceID string) bool {
 	return serviceID == "launcher-service-id"
 }
 
+func (fd *LauncherDeployer) DoesRemoveDeploy() bool {
+	return true
+}
+
 func (fd *LauncherDeployer) GetCatalogEntries() []*brokerapi.Service {
 	glog.Infof("Getting launcher catalog entries")
 	return getCatalogServicesObj()
@@ -40,6 +44,10 @@ func (fd *LauncherDeployer) Deploy(instanceID, brokerNamespace string, contextPr
 		Code:         http.StatusAccepted,
 		DashboardURL: dashboardUrl,
 	}, nil
+}
+
+func (fd *LauncherDeployer) RemoveDeploy(serviceInstanceId string, namespace string, k8sclient kubernetes.Interface) error {
+	return nil
 }
 
 func (fd *LauncherDeployer) LastOperation(instanceID string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.LastOperationResponse, error) {

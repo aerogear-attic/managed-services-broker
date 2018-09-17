@@ -37,6 +37,8 @@ type Deployer interface {
 	LastOperation(instanceID string, k8sclient kubernetes.Interface, osclient *openshift.ClientFactory) (*brokerapi.LastOperationResponse, error)
 	GetID() string
 	DoesDeploy(serviceID string) bool
+	DoesRemoveDeploy() bool
+	RemoveDeploy(serviceInstanceId string, namespace string, k8sclient kubernetes.Interface) error
 }
 
 // Controller defines the APIs that all controllers are expected to support. Implementations
@@ -106,10 +108,7 @@ func (c *userProvidedController) Catalog() (*brokerapi.Catalog, error) {
 	}, nil
 }
 
-func (c *userProvidedController) CreateServiceInstance(
-	instanceID string,
-	req *brokerapi.CreateServiceInstanceRequest,
-) (*brokerapi.CreateServiceInstanceResponse, error) {
+func (c *userProvidedController) CreateServiceInstance(instanceID string, req *brokerapi.CreateServiceInstanceRequest) (*brokerapi.CreateServiceInstanceResponse, error) {
 	glog.Infof("Create service instance: %s", req.ServiceID)
 	for _, deployer := range c.registeredDeployers {
 		if deployer.DoesDeploy(req.ServiceID) {
@@ -136,13 +135,19 @@ func (c *userProvidedController) GetServiceInstanceLastOperation(
 	return &brokerapi.LastOperationResponse{State: brokerapi.StateFailed, Description: "Could not find deployer for " + serviceID}, nil
 }
 
-func (c *userProvidedController) RemoveServiceInstance(
-	instanceID,
-	serviceID,
-	planID string,
-	acceptsIncomplete bool,
-) (*brokerapi.DeleteServiceInstanceResponse, error) {
+func (c *userProvidedController) RemoveServiceInstance(instanceID, serviceID, planID string, acceptsIncomplete bool) (*brokerapi.DeleteServiceInstanceResponse, error) {
 	glog.Info("RemoveServiceInstance()", instanceID)
+
+	for _, deployer := range c.registeredDeployers {
+		if deployer.DoesRemoveDeploy() {
+			glog.Info("RemoveDeploy()", instanceID)
+			err := deployer.RemoveDeploy(instanceID, c.brokerNS, c.k8sclient); if err != nil {
+				glog.Errorf("failed to remove service instance", err)
+				return &brokerapi.DeleteServiceInstanceResponse{}, err
+			}
+		}
+	}
+
 	return &brokerapi.DeleteServiceInstanceResponse{}, nil
 }
 

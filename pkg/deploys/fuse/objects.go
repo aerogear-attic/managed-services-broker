@@ -37,7 +37,7 @@ func getCatalogServicesObj() []*brokerapi.Service {
 }
 
 // Fuse Custom Resource
-func getFuseObj(userNamespace string) *v1alpha1.Syndesis {
+func getFuseObj(serviceInstanceId string, userNamespace string) *v1alpha1.Syndesis {
 	demoData := false
 	deployIntegrations := true
 	limit := 1
@@ -49,7 +49,7 @@ func getFuseObj(userNamespace string) *v1alpha1.Syndesis {
 			APIVersion: "syndesis.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "fuse",
+			Name:        "fuse-" + "-" + serviceInstanceId,
 			Annotations: map[string]string{},
 		},
 		Spec: v1alpha1.SyndesisSpec{
