@@ -63,6 +63,11 @@ Guide to building and running the broker locally and connecting it to a minishif
 
 __Note:__ The same steps should work with any OpenShift cluster (oc cluster up) that has access to your host machine.
 
+#### Experimental features:
+```
+$ export MINISHIFT_ENABLE_EXPERIMENTAL=y
+```
+
 #### Start minishift VM:
 
 OpenShift Version 3.9.0:
@@ -93,7 +98,7 @@ When setting up the broker we need to set the URL that the OpenShift cluster can
 $ oc process -f templates/broker.local.template.yml -p URL=http://192.168.99.1:8080 | oc create -f -
 ```
 
-Alternatively, if you already have a running managed service broker in your cluster you can patch the existing resource:
+Alternatively, if you already have a running managed service broker (named managed-services-broker in the example below) in your cluster you can patch the existing resource:
 ```
 $ oc patch clusterservicebroker/managed-services-broker --patch '{"spec":{"url": "http://192.168.99.1:8080"}}'
 ```
@@ -108,8 +113,11 @@ $ export KUBERNETES_CONFIG=~/.kube/config
 
 ```
 $ make build_binary run
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./tmp/_output/bin/managed-services-broker ./cmd/broker
-KUBERNETES_CONFIG=/home/mnairn/.kube/config ./tmp/_output/bin/managed-services-broker --port 8080
+```
+
+Following console output should be seen
+```
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./tmp/_output/bin/managed-services-broker ./cmd/broker KUBERNETES_CONFIG=/home/<username>/.kube/config ./tmp/_output/bin/managed-services-broker --port 8080
 INFO[0000] Catalog()
 INFO[0000] Getting fuse catalog entries
 INFO[0000] Getting launcher catalog entries
